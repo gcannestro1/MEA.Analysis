@@ -15,7 +15,7 @@ if iscell(FileList) == 0 | iscell(FileList) == 1
 end
 
 for z = 1:length(FileList)
-    if iscell(FileList) == 0 | iscell(FileList) == 1
+    if iscell(FileList) == 0 | length(FileList) == 1
         DataFileName = FileList(1, :);
     else
         DataFileName = FileList{z};
