@@ -10,13 +10,21 @@
 clear all; close all; clc
 
 [DataFileList, DataFilePath] = uigetfile('.h5', 'Grab the files to process', 'MultiSelect','on');
+
+if isequal(DataFileList, 0)
+    disp('No files selected');
+end
+
 if ischar(DataFileList)
     DataFileList = {DataFileList};
 end
 
 % for future streamlining
-%OptionalAnalysis = {'STTC_20250601_2.m', 'NullDistribution20250529.m'} 
-%selectedAnalysis = selectOptionalScripts(OptionalAnalysis)
+
+%Make sure you update the file names here !!!!!!!!!!!!!!!!
+OptionalAnalysis = {'STTC_NullDistribution_20250911.m'} ;
+SelectedAnalysis = selectOptionalScripts(OptionalAnalysis);
+
 
 for z = 1:length(DataFileList)
     DataFileName = fullfile(DataFilePath, DataFileList{z});
@@ -76,7 +84,7 @@ for z = 1:length(DataFileList)
     DurationS = TotalSamples/Settings.Recording.SamplingRate;
     DurationM = round(DurationS/60);
 
- 
+
     % Initialize Time Vector
     TimeVector = 0:1/(Settings.Recording.SamplingRate):DurationS-1/(Settings.Recording.SamplingRate);
 
@@ -285,7 +293,7 @@ for z = 1:length(DataFileList)
     clear IdxToRemove FilteredData FiringFreqAll SpikeRate
     disp('Electrodes Removed Based on Firing Rates');
 
-    %% Spike Waveforms
+%% Spike Waveforms
     % Pull out spike waveforms
     % 1 ms before, 2.2ms after
     % based on  https://www.sciencedirect.com/science/article/pii/S0165027015004240#fig0005
@@ -336,7 +344,7 @@ for z = 1:length(DataFileList)
     clear ElectrodeWaveforms SamplesPerMs WindowStart WindowEnd Waveform Idxpeak i ii j SpikeIdx
     disp('Waveforms Selected');
 
-    %% PreAllocate
+%% PreAllocate
     %Preallocating here to keep things consistent later on
     % for Spikes
     SpikeByElectrode = cell(size(AllPeaks(:, 1)));
@@ -408,7 +416,7 @@ for z = 1:length(DataFileList)
     end
     clear i
 
-    %% Burst detection from Max Interval Method
+%% Burst detection from Max Interval Method
     % No need to put statements in case spikes are empty, because those
     % electrodes get removed
 
@@ -524,7 +532,7 @@ for z = 1:length(DataFileList)
     clear MergeDupe i ii iii iv v vi  vii viii ProcessingBurstIdxs BurstStartISIIdx MaxIntraBurstInterval MinBurstSpikes Burst1
     disp('Burst Detection Complete')
 
-    %% Getting timings back for bursts, not using idxs
+%% Getting timings back for bursts, not using idxs
 
     % Swap ISI index to spike indices
     for i = 1:length(BurstByElectrode)
@@ -560,7 +568,7 @@ for z = 1:length(DataFileList)
     clear Burst1 Burst i ii iii iv v
     disp('Bursts Sorted')
 
-    %% Burst Characteristics By Electrode Below
+%% Burst Characteristics By Electrode Below
     % gets burst duration, number of bursts, number of spikes, ISI within
     % bursts, Freq within bursts, and interburst interval
     % All these characteristics are stored in a structure called
@@ -611,7 +619,7 @@ for z = 1:length(DataFileList)
     clear AvgISIInBursts SDISIBurst i ii iii iv IBI2 InterBurstInterval
     disp("Burst Characteristics Done")
 
-    %% Network Burst by Well !!!!!!!!!!!!!!!!!!!!!!
+%% Network Burst by Well 
     % Need to grab info from Burst by WELL then do math then store again by
     % electrode
 
@@ -733,9 +741,9 @@ for z = 1:length(DataFileList)
     clear DoubleCheckedBursts BurstingElectrodesInWell ElectrodesInvolved
     disp('Network by Well Done')
 
-    %% Config Network by Electrode
-    %Grouping info from indep electrode to then manipulate and send out
-    %to all electrodes involved
+%% Config Network by Electrode
+%Grouping info from indep electrode to then manipulate and send out
+%to all electrodes involved
 
     for i = 1:length(NetworkBurstInfo)  %independent wells
         if NetworkBurstInfo{i}.NumberOfNetworkBursts ~= 0
@@ -785,7 +793,7 @@ for z = 1:length(DataFileList)
     clear i ii iii iv v ElectrodeRow BurstNumber TempCount NetworkDurationS UniqueElecByNetwork
     disp('Network Sorted by Electrode')
 
-    %% Network Characteristics
+%% Network Characteristics
     for i = 1:length(NetworkByElectrode)
 
         if NetworkByElectrode{i}.NetworkBurstCount ~= 0
@@ -824,14 +832,9 @@ for z = 1:length(DataFileList)
     clear Tempcount i ii iii ElectrodeRow
     disp('Network Burst Characteristics Done')
 
-    %% Save things here
-    % going to fill with NaNs for table afterwards
-    %Saving here allows for visualization from file
-    %save('20240716_WT_DIV46_mwd.mat', 'NetworkBurstInfo', 'Settings', 'AllPeaks',  'BurstByElectrode', 'SpikeByElectrode', 'NetworkByElectrode', 'Data', 'ElectrodeNumber', 'WellNumber', 'FullyFilteredData',  '-v7.3')
-
-    %% empty Cell to NaN
+%% empty Cell to NaN
     for i = 1:length(SpikeByElectrode)
-        if BurstByElectrode{i}.NumberOfBursts == 0;
+        if BurstByElectrode{i}.NumberOfBursts == 0
             BurstByElectrode{i}.MeanBurstPerMin = 0;
             BurstByElectrode{i}.PercentSpikeBurst = 0;
             BurstByElectrode{i}.TimingS = NaN;
@@ -847,7 +850,7 @@ for z = 1:length(DataFileList)
             BurstByElectrode{i}.AvgISIInBursts = NaN;
             BurstByElectrode{i}.InterBurstIntervalS = NaN;
         end
-        if  NetworkByElectrode{i}.NetworkBurstCount == 0;
+        if  NetworkByElectrode{i}.NetworkBurstCount == 0
             NetworkByElectrode{i}.AvgNetworkSpikeFreq = NaN;
             NetworkByElectrode{i}.AvgNetworkSpikeCount = NaN;
             NetworkByElectrode{i}.AvgNetworkDurationS = NaN;
@@ -861,7 +864,7 @@ for z = 1:length(DataFileList)
     end
     disp('Replace empty with NaN for Table')
 
-    %% Plot Tables
+%% Write Tables & csv
     AllSpikeTable = table();
     for i = 1:length(SpikeByElectrode)
         ElectrodeNumCell = {SpikeByElectrode{i}.ElectrodeNumber};
@@ -898,27 +901,43 @@ for z = 1:length(DataFileList)
     else
     end
 
-    %Saving Table Below
+%% Saving Table Below as a CSV
     writetable(AllCombinedTable, CSVFileName);
     disp('Table Written')
     clear TempTable TempTable2 TempTable3
 
-end
-%% CV between wells or condition, i dont remember
-% Calculating Coefficient of Variance
+%% Running additional analysis from other files
 
-% !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-% NEED TO DO THIS LATER ON BETWEEN WELLS
-% Timing or voltage?
-% try this in s instead of ms
-% meanISI = cell(length(ISIAllSpikeS), 1);
-% StdISI = cell(length(ISIAllSpikeS), 1);
-% CV = cell(length(ISIAllSpikeS), 1);
-% 
-% for i = 1:length(SpikeByElectrode)
-%     meanISI = mean(SpikeByElectrode{i}.SpikeISI);
-%     StdISI = std(SpikeByElectrode{i}.SpikeISI);
-%     SpikeByElectrode{i}.SpikeCV = (StdISI)/(meanISI);
-%  end
+    for Y = 1:numel(SelectedAnalysis)
+        ScriptName = [SelectedAnalysis{Y} '.m'];
+        if exist(SelectedAnalysis{Y}, 'file') || exist(ScriptName, 'file')
+            try
+                run(SelectedAnalysis{Y})
+            catch ME
+                warning('Optional analysis script "%s" failed on %s:\n %s', SelectedAnalysis{Y}, DataFileList{z}, ME.message);
+            end
+        else
+            warning('Analysis "%s" not found on path.', SelectedAnalysis{Y});
+        end
+
+    end
+end
+
+    %% CV between wells or condition, i dont remember
+    % Calculating Coefficient of Variance
+
+    % !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    % NEED TO DO THIS LATER ON BETWEEN WELLS
+    % Timing or voltage?
+    % try this in s instead of ms
+    % meanISI = cell(length(ISIAllSpikeS), 1);
+    % StdISI = cell(length(ISIAllSpikeS), 1);
+    % CV = cell(length(ISIAllSpikeS), 1);
+    %
+    % for i = 1:length(SpikeByElectrode)
+    %     meanISI = mean(SpikeByElectrode{i}.SpikeISI);
+    %     StdISI = std(SpikeByElectrode{i}.SpikeISI);
+    %     SpikeByElectrode{i}.SpikeCV = (StdISI)/(meanISI);
+    %  end
 
 
