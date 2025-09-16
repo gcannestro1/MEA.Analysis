@@ -1,20 +1,27 @@
-function selectedScripts = selectOptionalScripts(optionalScriptList)
 
 % GUI for selecting optional analysis scripts, with optional hierarchy.
-%
-% INPUT FORMS:
+% This file houses multiple functions
+    % SelectedScripts - creates Gui for tree-like appearance for selecting
+        % analysis to be run
+    % MaybeCall - runs a script/function if it was checked off in SelectedScripts
+    % various helper functions
+
+
+% SelectedScripts Input types
 % 1) Flat list (backward-compatible): {'STTC.m','Clustering.m', ...}
 % 2) Hierarchical list (struct array):
 %    optionalScriptList(i) has fields:
 %       .label    (string)  - Display name in the list
 %       .script   (string)  - Script/function filename to return if selected
 %       .children (struct array, same shape) - optional children
-%
-% RETURNS:
+
+% Outputs:
 %   selectedScripts - cell array of selected script names (strings)
 %
 % Children are shown indented and disabled until the parent is selected.
 
+
+function selectedScripts = SelectOptionalScripts(optionalScriptList)
     % Normalize input into a tree of structs with fields: label, script, children
     if iscell(optionalScriptList) && (isempty(optionalScriptList) || ischar(optionalScriptList{1}) || isstring(optionalScriptList{1}))
         
@@ -214,3 +221,38 @@ function selectedScripts = selectOptionalScripts(optionalScriptList)
         out = out(1:c);
     end
 end
+
+% %% MaybeCall
+% % Call function/script `name` if it was selected
+%     % can be {'FuncA','FuncB.m', ...}. `name` can be 'FuncA' or 'FuncA.m'.
+%     % Convention: functions accept/return `ctx`; scripts will just run in-place.
+% 
+% function ctx = MaybeCall(SelectedAnalysis, name, ctx, varargin)
+%     % normalize names (case-insensitive, ignore .m)
+%     norm = @(s) lower(erase(string(s), ".m"));
+%     picked = norm(SelectedAnalysis);
+%     target = norm(name);
+% 
+%     if ~ismember(target, picked)
+%         return; % not selected → do nothing
+%     end
+% 
+%     % try as function first
+%     fname = char(target);
+%     if exist(fname, 'file') == 2
+%         try
+%             % Preferred: optional analyses are functions:  function ctx = X(ctx, varargin)
+%             ctx = feval(fname, ctx, varargin{:});
+%             return
+%         catch
+%             % Fall back: try to run as a script (uses current workspace)
+%             try
+%                 run([fname '.m']);
+%             catch ME
+%                 warning('Failed to run "%s": %s', fname, ME.message);
+%             end
+%         end
+%     else
+%         warning('Analysis "%s" not found on the path.', fname);
+%     end
+% end
