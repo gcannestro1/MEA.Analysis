@@ -1,66 +1,46 @@
-
-% GUI for selecting optional analysis scripts, with optional hierarchy.
-% This file houses multiple functions
-    % SelectedScripts - creates Gui for tree-like appearance for selecting
-        % analysis to be run
-    % MaybeCall - runs a script/function if it was checked off in SelectedScripts
-    % various helper functions
-
-
-% SelectedScripts Input types
-% 1) Flat list (backward-compatible): {'STTC.m','Clustering.m', ...}
-% 2) Hierarchical list (struct array):
-%    optionalScriptList(i) has fields:
-%       .label    (string)  - Display name in the list
-%       .script   (string)  - Script/function filename to return if selected
-%       .children (struct array, same shape) - optional children
-
-% Outputs:
-%   selectedScripts - cell array of selected script names (strings)
-%
-% Children are shown indented and disabled until the parent is selected.
-
-
 function selectedScripts = SelectOptionalScripts(optionalScriptList)
-    % Normalize input into a tree of structs with fields: label, script, children
-    if iscell(optionalScriptList) && (isempty(optionalScriptList) || ischar(optionalScriptList{1}) || isstring(optionalScriptList{1}))
-        
-        % Flat cellstr → struct array
+% SelectOptionalScripts  Minimal checkbox GUI (flat or hierarchical)
+% Input:
+%   - optionalScriptList:
+%       A) cellstr: {'STTC.m','Clustering.m', ...}
+%       B) struct array with fields:
+%            .label   (string/char)
+%            .script  (string/char)
+%            .children (struct array, optional, same shape)
+% Output:
+%   - selectedScripts : cellstr of chosen script names (visual order)
+
+    % ---------- Normalize to struct tree ----------
+    if iscell(optionalScriptList)
         S = repmat(struct('label',"", 'script',"", 'children',struct.empty(0,1)), numel(optionalScriptList), 1);
         for k = 1:numel(optionalScriptList)
             txt = string(optionalScriptList{k});
             S(k).label = txt;
             S(k).script = txt;
-            S(k).children = struct.empty(0,1);
         end
         rootItems = S;
-
     elseif isstruct(optionalScriptList)
-        % Assume already hierarchical structs
         rootItems = optionalScriptList(:);
     else
-        error('optionalScriptList must be a cellstr or a struct array.');
+        error('optionalScriptList must be a cellstr or struct array.');
     end
 
-    % Flatten tree into a linear list with level, parent, and child links
+    % ---------- Flatten to nodes ----------
     nodes = struct('label',{},'script',{},'level',{},'parent',{},'children',{},'idx',{});
-    parentStack = [];
     function addNodes(items, level, parentIdx)
         for ii = 1:numel(items)
-            nd.label   = string(items(ii).label);
-            nd.script  = string(items(ii).script);
-            nd.level   = level;
-            nd.parent  = parentIdx;
-            nd.children = [];   % will fill after push
-            nd.idx     = numel(nodes)+1;
+            nd.label    = string(items(ii).label);
+            nd.script   = string(items(ii).script);
+            nd.level    = level;
+            nd.parent   = parentIdx;
+            nd.children = [];
+            nd.idx      = numel(nodes)+1;
             nodes(end+1) = nd; %#ok<AGROW>
-
             myIdx = numel(nodes);
-            if ~isempty(items(ii).children)
+            if isfield(items(ii),'children') && ~isempty(items(ii).children)
                 startChild = numel(nodes)+1;
                 addNodes(items(ii).children(:), level+1, myIdx);
-                childIdx = startChild:numel(nodes);
-                nodes(myIdx).children = childIdx;
+                nodes(myIdx).children = startChild:numel(nodes);
             end
         end
     end
@@ -68,115 +48,114 @@ function selectedScripts = SelectOptionalScripts(optionalScriptList)
 
     if isempty(nodes)
         selectedScripts = {};
-        return;
+        return
     end
 
-    % GUI sizing
-    rowH    = 26;
-    topPad  = 60;
-    botPad  = 60;
-    figW    = 380;
-    figH    = max(180, topPad + botPad + rowH*numel(nodes));
+    % ---------- GUI layout ----------
+    rowH       = 24;
+    marginTop  = 56;
+    marginBot  = 56;
     indentStep = 20;
+    figW       = 420;
+    figH       = max(180, marginTop + marginBot + rowH*numel(nodes));
 
-    % State
     selections = false(1, numel(nodes));
-    cb = gobjects(numel(nodes),1);
+    cbs        = gobjects(numel(nodes),1);
+    doneFlag   = false; %#ok<NASGU> % set in callbacks
+    % keep selections & nodes in outer scope so callbacks can see them
 
-    % Build figure
-    fig = figure('Name','Select Optional Scripts', ...
-                 'NumberTitle','off', ...
-                 'MenuBar','none', ...
-                 'Resize','off', ...
-                 'Position',[500 300 figW figH]);
+    fig = figure( ...
+        'Name','Select Optional Scripts', ...
+        'NumberTitle','off', ...
+        'MenuBar','none', ...
+        'Resize','off', ...
+        'Position',[500 300 figW figH], ...
+        'CloseRequestFcn', @onClose);
 
-    uicontrol('Style','text',...
-              'String','Select optional analyses to run:',...
-              'HorizontalAlignment','left',...
-              'Position',[20 figH-40 figW-40 20]);
+    uicontrol('Style','text', ...
+        'String','Select optional analyses to run:', ...
+        'HorizontalAlignment','left', ...
+        'Position',[16 figH-34 figW-32 18]);
 
-    % Create checkboxes
+    % Checkboxes
     for i = 1:numel(nodes)
-        y = figH - topPad - (i-1)*rowH;
-        % Add a visual arrow for children
-        prefix = repmat(' ', 1, nodes(i).level*0); % visual spacing is via Position X
+        y = figH - marginTop - (i-1)*rowH;
         if nodes(i).level > 0
-            displayText = sprintf('↳ %s', nodes(i).label);
+            label = sprintf('↳ %s', nodes(i).label);
         else
-            displayText = char(nodes(i).label);
+            label = char(nodes(i).label);
         end
-
-        cb(i) = uicontrol('Style','checkbox', ...
-            'String', displayText, ...
-            'Position',[20 + nodes(i).level*indentStep, y, figW-60, 20], ...
+        cbs(i) = uicontrol('Style','checkbox', ...
+            'String', label, ...
+            'Position',[16 + nodes(i).level*indentStep, y, figW-48, 20], ...
             'HorizontalAlignment','left', ...
-            'Enable', ternary(nodes(i).parent==0,'on','off'), ...
-            'Callback', @(src,~) onToggle(src, i));
+            'Enable', onOff(nodes(i).parent==0), ...
+            'Callback', @(src,~) onToggle(i, logical(get(src,'Value'))));
     end
 
-    % Action buttons
-    uicontrol('Style','pushbutton',...
-              'String','Select All (Top Level)',...
-              'Position',[20 20 150 28],...
-              'Callback', @selectAllTop);
-    uicontrol('Style','pushbutton',...
-              'String','Clear All',...
-              'Position',[180 20 90 28],...
-              'Callback', @clearAll);
-    uicontrol('Style','pushbutton',...
-              'String','Confirm Selection',...
-              'Position',[280 20 90 28],...
-              'Callback', @confirmSelection);
+    % Buttons
+    uicontrol('Style','pushbutton', ...
+        'String','Top-Level: All', ...
+        'Position',[16 16 120 28], ...
+        'Callback', @selectAllTop);
+    uicontrol('Style','pushbutton', ...
+        'String','Clear', ...
+        'Position',[144 16 80 28], ...
+        'Callback', @clearAll);
+    uicontrol('Style','pushbutton', ...
+        'String','Confirm', ...
+        'Position',[232 16 80 28], ...
+        'Callback', @confirmSelection);
+    uicontrol('Style','pushbutton', ...
+        'String','Cancel', ...
+        'Position',[320 16 80 28], ...
+        'Callback', @cancelSelection);
 
-    uiwait(fig);
+    % ---------- Wait WITHOUT uiwait (avoids ViewModel warnings) ----------
+    % We simply wait for the figure to be deleted.
+    waitfor(fig);  % returns when fig is deleted by any of the callbacks
 
-    % Output (preserve on-screen order)
-    selectedScripts = cellstr(nodes2scripts());
+    % On confirm, a nested callback stored the choices into base selection array
+    % Build the output (preserve visual order)
+    picked = {};
+    for i = 1:numel(nodes)
+        if selections(i) && strlength(nodes(i).script) > 0
+            picked{end+1} = char(nodes(i).script); %#ok<AGROW>
+        end
+    end
+    selectedScripts = picked;
 
-    %% Helpers
-    function v = ternary(cond, a, b), if cond, v=a; else, v=b; end; end
-
-    function onToggle(src, idx)
-        val = logical(get(src,'Value'));
+    % ---------- nested helpers ----------
+    function onToggle(idx, val)
         selections(idx) = val;
-
         if ~val
-            % Turning a node OFF: disable & clear all descendants
-            disableDescendants(idx, true);
-        else
-            % Turning a node ON: ensure all ancestors are ON and enable children
-            ensureAncestors(idx);
-            enableChildren(idx);
-        end
-    end
-
-    function ensureAncestors(idx)
-        p = nodes(idx).parent;
-        while p > 0
-            if ~selections(p)
-                selections(p) = true;
-                set(cb(p),'Value',1,'Enable','on');
-            end
-            p = nodes(p).parent;
-        end
-    end
-
-    function enableChildren(idx)
-        for ch = nodes(idx).children
-            set(cb(ch), 'Enable', 'on');
-            % do NOT auto-select child; user decides
-        end
-    end
-
-    function disableDescendants(idx, clearVals)
-        % Disable & optionally uncheck entire subtree
-        for ch = nodes(idx).children
-            if clearVals
+            % turn OFF: disable and uncheck descendants
+            for ch = nodes(idx).children
                 selections(ch) = false;
-                set(cb(ch),'Value',0);
+                set(cbs(ch),'Value',0,'Enable','off');
+                cascadeDisable(ch);
             end
-            set(cb(ch),'Enable','off');
-            disableDescendants(ch, clearVals);
+        else
+            % turn ON: ensure ancestors are ON, enable children
+            p = nodes(idx).parent;
+            while p > 0
+                if ~selections(p)
+                    selections(p) = true;
+                    set(cbs(p),'Value',1,'Enable','on');
+                end
+                p = nodes(p).parent;
+            end
+            for ch = nodes(idx).children
+                set(cbs(ch),'Enable','on');
+            end
+        end
+    end
+
+    function cascadeDisable(idx)
+        for ch = nodes(idx).children
+            selections(ch) = false;
+            set(cbs(ch),'Value',0,'Enable','off');
+            cascadeDisable(ch);
         end
     end
 
@@ -184,8 +163,11 @@ function selectedScripts = SelectOptionalScripts(optionalScriptList)
         for i = 1:numel(nodes)
             if nodes(i).parent==0
                 selections(i) = true;
-                set(cb(i),'Value',1,'Enable','on');
-                enableChildren(i);
+                set(cbs(i),'Value',1,'Enable','on');
+                % enable immediate children (don't auto-select them)
+                for ch = nodes(i).children
+                    set(cbs(ch),'Enable','on');
+                end
             end
         end
     end
@@ -193,66 +175,28 @@ function selectedScripts = SelectOptionalScripts(optionalScriptList)
     function clearAll(~,~)
         for i = 1:numel(nodes)
             selections(i) = false;
-            set(cb(i),'Value',0);
-            if nodes(i).parent == 0
-                set(cb(i),'Enable','on');
-            else
-                set(cb(i),'Enable','off');
-            end
+            set(cbs(i),'Value',0, 'Enable', onOff(nodes(i).parent==0));
         end
     end
 
     function confirmSelection(~,~)
-        uiresume(fig);
-        if isvalid(fig), delete(fig); end
+        % simply close; selections are already up to date
+        if ishghandle(fig), delete(fig); end
     end
 
-    function out = nodes2scripts()
-        % Return scripts for all selected nodes, in visual order
-        picked = find(selections);
-        out = strings(1, numel(picked));
-        c = 0;
-        for i = 1:numel(nodes)
-            if selections(i) && strlength(nodes(i).script) > 0
-                c = c+1;
-                out(c) = nodes(i).script;
-            end
-        end
-        out = out(1:c);
+    function cancelSelection(~,~)
+        % clear selections and close
+        selections(:) = false;
+        if ishghandle(fig), delete(fig); end
+    end
+
+    function onClose(~,~)
+        % Treat window close as cancel
+        selections(:) = false;
+        delete(fig);
+    end
+
+    function s = onOff(tf)
+        if tf, s = 'on'; else, s = 'off'; end
     end
 end
-
-% %% MaybeCall
-% % Call function/script `name` if it was selected
-%     % can be {'FuncA','FuncB.m', ...}. `name` can be 'FuncA' or 'FuncA.m'.
-%     % Convention: functions accept/return `ctx`; scripts will just run in-place.
-% 
-% function ctx = MaybeCall(SelectedAnalysis, name, ctx, varargin)
-%     % normalize names (case-insensitive, ignore .m)
-%     norm = @(s) lower(erase(string(s), ".m"));
-%     picked = norm(SelectedAnalysis);
-%     target = norm(name);
-% 
-%     if ~ismember(target, picked)
-%         return; % not selected → do nothing
-%     end
-% 
-%     % try as function first
-%     fname = char(target);
-%     if exist(fname, 'file') == 2
-%         try
-%             % Preferred: optional analyses are functions:  function ctx = X(ctx, varargin)
-%             ctx = feval(fname, ctx, varargin{:});
-%             return
-%         catch
-%             % Fall back: try to run as a script (uses current workspace)
-%             try
-%                 run([fname '.m']);
-%             catch ME
-%                 warning('Failed to run "%s": %s', fname, ME.message);
-%             end
-%         end
-%     else
-%         warning('Analysis "%s" not found on the path.', fname);
-%     end
-% end
