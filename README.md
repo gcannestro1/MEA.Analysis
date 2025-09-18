@@ -1,7 +1,21 @@
-Files for analysis of a 24-well Multichannel Systems multi-electrode array.
+# Multichannel Systems 24-Well MEA Analysis
 
+## Introduction
+This repository contains tools for analyzing data from a 24-well Multichannel Systems multi-electrode array (MEA), configured for .h5 files. The analysis focuses on neural activity, including spike/burst properties, network dynamics, and clustering coefficients.
 
-These files are set up for the specific configuration and labeling of the above system utilizing .h5 files instead of the proprietary files. 
+## Features
+- Basic characteristics analysis (spike, burst, network burst properties)
+- Spike Time Tiling Coefficients (STTC)
+- Clustering coefficients (local and global)
 
+## Requirements
+- Matlab
+- Required Toolboxes/Add-ons: Bioinformatics Toolbox, McsMatlabDataTools, Signal Processing Toolbox, Statistics and Machine Learning Toolbox
 
-Analysis here includes basic characteristics (spike/burst/network burst properties), Spike Time Tiling Coefficients (STTC), and clustering coefficients (local and global).
+## How to Use
+1. Clone the repository
+2. Install dependencies 
+3. Run the analysis script
+
+## Contributions
+Contributions are welcome! Feel free to open an issue or submit a pull request.
