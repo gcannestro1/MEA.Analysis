@@ -5,7 +5,7 @@ function STTCVisualization(FilteredTable, ChannelLayout, ElectrodeNumber, base)
 % Expects FilteredTable with vars: WellNumber, Electrode1, Electrode2, STTC
     UniqueWellsSTTC = unique(FilteredTable.WellNumber);
 
-    for j = 1:numel(UniqueWellsSTTC)
+    for j = 1%:numel(UniqueWellsSTTC)
         % rows for this well
         Rows = FilteredTable.WellNumber == UniqueWellsSTTC(j);
         X = FilteredTable.Electrode1(Rows);
@@ -17,6 +17,7 @@ function STTCVisualization(FilteredTable, ChannelLayout, ElectrodeNumber, base)
         YElecNum = str2double(ElectrodeNumber(Y));
 
         %Find actual electrode order to keep images consistent
+  
         for l = 1:length(XElecNum)
             XElecOrder(l) = find(ChannelLayout.ElectrodeNumber == XElecNum(l));
             YElecOrder(l) = find(ChannelLayout.ElectrodeNumber == YElecNum(l));
@@ -40,16 +41,22 @@ function STTCVisualization(FilteredTable, ChannelLayout, ElectrodeNumber, base)
         set(h, 'Alphadata', ~isnan(Matrix))
 
         axis equal tight
-        colormap(parula);                       % use any colormap you like
+        colormap(nebula);                       % use any colormap you like
         cb = colorbar; ylabel(cb, 'STTC');
-        set(gca, 'XTick', [1:12], 'YTick', [1:12]);
-        xlabel('Electrode'); ylabel('Electrode');
-        title(sprintf('STTC between channels – Well %s', string(UniqueWellsSTTC(j))));
-        % (imagesc already set limits; caxis([0 1]) would also work.)
+        set(gca, 'XTick', 1:12, 'YTick', 1:12, 'TickLength', [0 0]);
+        set(gca, 'XAxisLocation', 'top')
+        
+        % !!!!! Need to offset grid !!
+        grid 
+        Ax.XGrid
+        
+        xlabel('Electrode', 'FontSize', 12); 
+        ylabel('Electrode', 'FontSize', 12);
+        title(sprintf('STTC between electrodes – well %s', string(UniqueWellsSTTC(j))), 'FontSize', 12);
 
         %Exporting here
         PngFile = fullfile( sprintf('%s_STTC_Well%s.png', base, string(UniqueWellsSTTC(j))));
-        exportgraphics(gcf, PngFile, 'Resolution', 300)
+        exportgraphics(gcf, PngFile, 'Resolution', 600)
         close(f)
     end
 clear X Y XElecNum YElecNum XElecOrder YElecOrder Matrix cb h j k Rows STTC UniqueWellsSTTC f PngFile n 

@@ -1,16 +1,22 @@
+% Getting Network Clustering Coefficient here
+% References to:
+% (Negri et al., 2020) https://www.eneuro.org/content/7/1/ENEURO.0080-19.2019/tab-figures-data
+% (Watts & Strogatz, 1998) https://www.nature.com/articles/30918 
+
+
 %Electrode config for sttc
 % Electrodes are setup like
 % ** 21 31 **
 % 12 22 32 42
 % 13 23 33 43
 % ** 24 34 **
+
 !!!!!!!!!!!!!! See below issues !!!!!!!!!!!
 %Setting up layout for figures
 ChannelLayout.ElectrodeNumber = [21; 31; 12; 22; 32; 42; 13; 23; 33; 43; 24; 34];
 ChannelLayout.X = [2; 3; 1; 2; 3; 4; 1; 2; 3; 4; 2; 3];
 ChannelLayout.Y = [4; 4; 3; 3; 3; 3; 2; 2; 2; 2; 1; 1];
 SPlot = string(ChannelLayout.ElectrodeNumber);
-
 
 %  figure; hold on
 %  dot = plot(ChannelLayout.X, ChannelLayout.Y, 'ko', MarkerFaceColor='none')

@@ -1,7 +1,5 @@
-%% RasterPlot function
-%
+%% RasterPlot 
 
-%function RasterPlot(ChannelLayout, ElectrodeNumber, WellNumber, SpikeByElectrode, BurstByElectrode, NetworkByElectrode, base)
 % get how many wells
 UniqueWellRaster = unique(WellNumber);
 for i = 1:length(UniqueWellRaster)
@@ -20,6 +18,7 @@ for i = 1:length(UniqueWellRaster)
         ElectrodeSpikes = SpikeByElectrode{ElecInWell(j), 1}.TimingS;
         plot(ElectrodeSpikes, ElecOrderForThisWell * ones(size(ElectrodeSpikes)), '|k', 'MarkerSize', 10)
         hold on
+
         % Bursts
         % Does it exist? If no bursts, no network either so
         % continue
@@ -31,6 +30,7 @@ for i = 1:length(UniqueWellRaster)
         CurrentBurstTimes = BurstByElectrode{ElecInWell(j)}.TimingS;
         for k = 1:length(CurrentBurstTimes)
             line([CurrentBurstTimes{k}(1), CurrentBurstTimes{k}(end)], [ElecOrderForThisWell+0.25, ElecOrderForThisWell+0.25], 'Color', 'r', 'LineWidth', 5);
+            
             %the 0.5 above is to offset it slightly to be visible ABOVE spikes
             hold on;
         end
@@ -56,18 +56,18 @@ for i = 1:length(UniqueWellRaster)
 
     end
 % Customize plot
-xlabel('Time (s)', 'FontSize', 14);
-ylabel('Electrode Number');
+xlabel('Time (s)', 'FontSize', 12);
+ylabel('Electrode Number', 'FontSize', 12);
 ylim([0 13]);
-title(sprintf('Raster plot – Well %s', string(UniqueWellRaster(i))));
+TitleTxt = append('Raster plot - Well ', string(UniqueWellRaster(i)));
+title(TitleTxt, 'FontSize', 12);
 
 %export figure here
 PngFile = fullfile(sprintf('%s_RasterWell%s.png', base, string(UniqueWellRaster(i))));
-exportgraphics(gcf, PngFile, 'Resolution', 300)
+exportgraphics(gcf, PngFile, 'Resolution', 600, Units="pixels", Width=600,Height=500,Padding=10)
 close(f)
 end
 
-clear CurrentBurstTimes BurstIdx Start End f k m l InvolvedNumber NBYPosition InvolvedElectrodes NBInfo
-%end
+clear CurrentBurstTimes BurstIdx Start End f k m l InvolvedNumber NBYPosition InvolvedElectrodes NBInfo UniqueWellRaster
 
 
