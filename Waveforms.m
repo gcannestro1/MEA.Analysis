@@ -36,6 +36,7 @@ for i = 1:length(UniqueWells)
         % Saving as .fig here to edit axis after inspection
         % Not all needed, not all have same amplitude
     FigFile = fullfile(sprintf('%s_WaveformWell%s', base, string(UniqueWellsWaveform(i))));
+    FigFile = append(FigFile, '.fig');
     savefig(FigFile)
     %exportgraphics(gcf, FigFile, 'Resolution', 600)
     close(f)
