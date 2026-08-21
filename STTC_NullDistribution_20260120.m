@@ -37,8 +37,8 @@ OutputSTTC = [base, 'RealSTTC.csv'];
 UniqueWells = unique(WellNumber);
 AllSTTC = [];
 
-for i = 1:length(UniqueWells)
-    CurrentWell = UniqueWells(i);
+for nUniqueWells = 1:length(UniqueWells)
+    CurrentWell = UniqueWells(nUniqueWells);
     ElectrodesInCurrentWell = find(WellNumber == CurrentWell);
     if length(ElectrodesInCurrentWell) < 2
         continue
@@ -62,7 +62,7 @@ for i = 1:length(UniqueWells)
             STTCNull = zeros(Iterations, 1);
 
             % Run Simulations
-            for iv = 1:Iterations
+            parfor iv = 1:Iterations
                 % random spike indexes (ticks) without replacement ->
                 % converted to timings
                 A_spikes = sort(randperm(RecordingLength, ElectrodeA_NumSpikes)'/ SamplingRate);
@@ -73,7 +73,7 @@ for i = 1:length(UniqueWells)
             end
 
             % Limits
-            NullSD = std(STTCNull) * 2;
+            NullSD = std(STTCNull) * 1.96;
             NullMean = mean(STTCNull);
             PosLim = NullMean + NullSD;
             NegLim = NullMean - NullSD;
@@ -82,7 +82,10 @@ for i = 1:length(UniqueWells)
             IsSignificant = RealSTTC > PosLim || RealSTTC < NegLim;
 
             % Store Row
-            AllSTTC = [AllSTTC; {CurrentWell, Electrode1, Electrode2, RealSTTC, NullMean, NullSD, PosLim, NegLim, IsSignificant}];
+            Electrode1ID = ElectrodeNumber{Electrode1};
+            Electrode2ID = ElectrodeNumber{Electrode2};
+
+            AllSTTC = [AllSTTC; {CurrentWell, Electrode1ID, Electrode2ID, RealSTTC, NullMean, NullSD, PosLim, NegLim, IsSignificant}];
 
         end
     end
@@ -97,8 +100,9 @@ FilteredTable = T(T.Significant == true, :);
 writetable(FilteredTable, OutputSTTC);
 
 clear NegLim PosLim NullMean NullSD IsSignificant ElectrodeA_NumSpikes ElectrodeB_NumSpikes 
-clear STTCNull A_spikes B_spikes AllSTTC RealSTTC OutputSTTC
+clear STTCNull A_spikes B_spikes AllSTTC RealSTTC OutputSTTC Electrode1ID Electrode2ID
 disp('STTC Null Complete')
+
 %% STTC Visualization called here in file STTCVisualization
 % Plots heatmap of sttc by well for all Real STTC values including self
 % comparisons of 1 (1s are to be removed below for analysis purposes)
@@ -190,15 +194,15 @@ function T = calculate_T(spike_times, DeltaT, DurationS)
 
     % Merge overlapping intervals
     MergedIntervals = intervals(1, :);
-    for i = 2:size(intervals, 1)
+    for nMergedIntervals = 2:size(intervals, 1)
 
         % Overlapping intervals, merge them
-        if intervals(i, 1) <= MergedIntervals(end, 2)       
-            MergedIntervals(end, 2) = max(MergedIntervals(end, 2), intervals(i, 2));
+        if intervals(nMergedIntervals, 1) <= MergedIntervals(end, 2)       
+            MergedIntervals(end, 2) = max(MergedIntervals(end, 2), intervals(nMergedIntervals, 2));
         
         % Non-overlapping interval, add it to the list
         else
-            MergedIntervals = [MergedIntervals; intervals(i,:)];
+            MergedIntervals = [MergedIntervals; intervals(nMergedIntervals,:)];
         end
     end
 
