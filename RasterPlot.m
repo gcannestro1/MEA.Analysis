@@ -15,46 +15,46 @@ for i = 1:length(UniqueWellRaster)
         ElecOrderForThisWell = find(ChannelLayout.ElectrodeNumber == ElecNumInWell);    % Will also be the Y position in plotting
 
         % Get spike info & plot
-        ElectrodeSpikes = SpikeByElectrode{ElecInWell(j), 1}.TimingS;
+        ElectrodeSpikes = AllPeaks{ElecInWell(j), 2};
         plot(ElectrodeSpikes, ElecOrderForThisWell * ones(size(ElectrodeSpikes)), '|k', 'MarkerSize', 10)
         hold on
 
-        % Bursts
-        % Does it exist? If no bursts, no network either so
-        % continue
-        if BurstByElectrode{ElecInWell(j)}.NumberOfBursts == 0
-            continue
-        end
-
-        % Get timings, plot above spikes
-        CurrentBurstTimes = BurstByElectrode{ElecInWell(j)}.TimingS;
-        for k = 1:length(CurrentBurstTimes)
-            line([CurrentBurstTimes{k}(1), CurrentBurstTimes{k}(end)], [ElecOrderForThisWell+0.25, ElecOrderForThisWell+0.25], 'Color', 'r', 'LineWidth', 5);
-
-            %the 0.5 above is to offset it slightly to be visible ABOVE spikes
-            hold on;
-        end
-
-        % Network burst
-        if NetworkByElectrode{ElecInWell(j)}.NetworkBurstCount == 0
-            continue
-        end
-
-        NBInfo = NetworkByElectrode{ElecInWell(j)};
-        for l = 1:NBInfo.NetworkBurstCount
-            Start = NBInfo.TimingS(l, 1);
-            End = NBInfo.TimingS(l, 2);
-
-            InvolvedElectrodes = NBInfo.ElectrodesInvolved{l};
-            for m = 1:length(InvolvedElectrodes)
-                %Need to get electrode order here again
-                InvolvedNumber(m) = str2double(ElectrodeNumber{InvolvedElectrodes(m)});
-                NBYPosition = find(ChannelLayout.ElectrodeNumber == InvolvedNumber(m));
-                line([Start, End], [NBYPosition + 0.5, NBYPosition + 0.5], 'Color', 'b', 'LineWidth', 5);
-            end
-        end
-
-    end
+    %     % Bursts
+    %     % Does it exist? If no bursts, no network either so
+    %     % continue
+    %     if BurstByElectrode{ElecInWell(j)}.NumberOfBursts == 0
+    %         continue
+    %     end
+    % 
+    %     % Get timings, plot above spikes
+    %     CurrentBurstTimes = BurstByElectrode{ElecInWell(j)}.TimingS;
+    %     for k = 1:length(CurrentBurstTimes)
+    %         line([CurrentBurstTimes{k}(1), CurrentBurstTimes{k}(end)], [ElecOrderForThisWell+0.25, ElecOrderForThisWell+0.25], 'Color', 'r', 'LineWidth', 5);
+    % 
+    %         %the 0.5 above is to offset it slightly to be visible ABOVE spikes
+    %         hold on;
+    %     end
+    % 
+    %     % Network burst
+    %     if NetworkByElectrode{ElecInWell(j)}.NetworkBurstCount == 0
+    %         continue
+    %     end
+    % 
+    %     NBInfo = NetworkByElectrode{ElecInWell(j)};
+    %     for l = 1:NBInfo.NetworkBurstCount
+    %         Start = NBInfo.TimingS(l, 1);
+    %         End = NBInfo.TimingS(l, 2);
+    % 
+    %         InvolvedElectrodes = NBInfo.ElectrodesInvolved{l};
+    %         for m = 1:length(InvolvedElectrodes)
+    %             %Need to get electrode order here again
+    %             InvolvedNumber(m) = str2double(ElectrodeNumber{InvolvedElectrodes(m)});
+    %             NBYPosition = find(ChannelLayout.ElectrodeNumber == InvolvedNumber(m));
+    %             line([Start, End], [NBYPosition + 0.5, NBYPosition + 0.5], 'Color', 'b', 'LineWidth', 5);
+    %         end
+    %     end
+    % 
+     end
     % Customize plot
     xlabel('Time (s)', 'FontSize', 12);
     ylabel('Electrode Number', 'FontSize', 12);
